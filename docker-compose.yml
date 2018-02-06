@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  composedemo_db:
+    image: mongo
+
+  composedemo_redis:
+    image: redis
+
+  backend:
+    image: backend
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    depends_on:
+      - composedemo_db
+
+  frontend:
+    image: frontend
+    build:
+      context: .
+      dockerfile: Frontend/Dockerfile
+    depends_on:
+      - composedemo_redis
+
+  composedemo_webserver:
+    image: webserver
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    ports:
+      - 8080:80
