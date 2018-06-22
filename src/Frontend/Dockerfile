@@ -1,19 +1,18 @@
-FROM microsoft/aspnetcore:2.0 AS base
+FROM microsoft/dotnet:2.1-aspnetcore-runtime AS base
 WORKDIR /app
 EXPOSE 80
 
-FROM microsoft/aspnetcore-build:2.0 AS build
+FROM microsoft/dotnet:2.1-sdk AS build
 WORKDIR /src
-COPY *.sln ./
 COPY Frontend/Frontend.csproj Frontend/
 COPY Entities/Entities.csproj Entities/
-RUN dotnet restore
+RUN dotnet restore Frontend/Frontend.csproj
 COPY . .
 WORKDIR /src/Frontend
-RUN dotnet build -c Release -o /app
+RUN dotnet build Frontend.csproj -c Release -o /app
 
 FROM build AS publish
-RUN dotnet publish -c Release -o /app
+RUN dotnet publish Frontend.csproj -c Release -o /app
 
 FROM base AS final
 WORKDIR /app

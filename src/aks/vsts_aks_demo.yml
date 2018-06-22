@@ -1,43 +1,7 @@
-apiVersion: apps/v1beta1
-kind: Deployment
+apiVersion: v1
+kind: Namespace
 metadata:
-  name: composedemodb
-spec:
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: composedemodb
-    spec:
-      containers:
-      - name: composedemodb
-        image: mongo
-        ports:
-        - containerPort: 27017
-        volumeMounts:
-        - name: mongo-volume
-          mountPath: /data/db
-      volumes:
-        - name: mongo-volume
-          persistentVolumeClaim:
-            claimName: test-pv-claim
----
-apiVersion: apps/v1beta1
-kind: Deployment
-metadata:
-  name: composedemoredis
-spec:
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: composedemoredis
-    spec:
-      containers:
-      - name: composedemoredis
-        image: redis
-        ports:
-        - containerPort: 6379
+  name: #{Release.EnvironmentName}#
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -52,12 +16,15 @@ spec:
     spec:
       containers:
       - name: backend
-        image: desdemoregistry.azurecr.io/backend
+        image: desdemoregistry.azurecr.io/backend:#{Release.Artifacts.Backend.BuildId}#
         ports:
         - containerPort: 80
         env:
         - name: ConnectionStrings__mongo
-          value: "mongodb://composedemodb"
+          valueFrom:
+            secretKeyRef:
+              key: connectionstring
+              name: aksdemocosmos
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -72,12 +39,15 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: desdemoregistry.azurecr.io/frontend:latest
+        image: desdemoregistry.azurecr.io/frontend:#{Release.Artifacts.Frontend.BuildId}#
         ports:
         - containerPort: 80
         env:
         - name: cache__redis
-          value: "composedemoredis"
+          valueFrom:
+            secretKeyRef:
+              key: connectionstring
+              name: aksdemoredis
         - name: ASPNETCORE_ENVIRONMENT
           value: "Development"
         - name: isInCluster
@@ -96,29 +66,9 @@ spec:
     spec:
       containers:
       - name: webserver
-        image: desdemoregistry.azurecr.io/webserver
+        image: desdemoregistry.azurecr.io/webserver:#{Release.Artifacts.WebServer.BuildId}#
         ports:
         - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata: 
-  name: composedemodb
-spec:
-  ports:
-  - port: 27017
-  selector:
-    app: composedemodb
----
-apiVersion: v1
-kind: Service
-metadata: 
-  name: composedemoredis
-spec:
-  ports:
-  - port: 6379
-  selector:
-    app: composedemoredis
 ---
 apiVersion: v1
 kind: Service
